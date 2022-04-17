@@ -1,0 +1,497 @@
+//分为三类：非紧急、一般、紧急
+//紧急信息优先处理，一般信息按照先来先服务
+//超出一个小时的一般信息升级为紧急信息（A升级成S）
+//报警序列剩余10%空间或者两个小时后仍有未处理的报警信息，系统给出警告
+//输入时按照 报警信息、报警内容、报警时间
+//并没有随机生成的问题
+//printf("年：%d\n", t.tm_year + 1900);
+//printf("月：%d\n", t.tm_mon + 1);
+//printf("日：%d\n", t.tm_mday);
+//printf("周：%d\n", t.tm_wday);
+//printf("时：%d\n", t.tm_hour);
+//printf("分：%d\n", t.tm_min);
+//printf("秒：%d\n", t.tm_sec);
+#include<iostream>
+#include<cstdio>
+#include<Windows.h>
+#include <ctime>
+#define MAX 1000
+using namespace std;
+typedef struct Information//报警内容
+{
+	char Name[10];
+	char Jieguo;
+	int fx;//代表A类信息是否升级的S类当中
+	int Year, Month, Day, Hour, Mintue, Second;//报警的时间
+	int CYear, CMonth, CDay, CHour, CMintue, CSecond;//出警的时间
+	struct Information* next;
+}Information;
+typedef struct Leibie//表示报警信息，包括：紧急、一般、非紧急
+{
+	char Dengji;
+	int length;
+	Information* first;
+}Leibie,List[3];
+typedef struct//定义Police
+{
+	List adj;
+}Police;
+void InsertEdge(Police& P,char x,int y)//头插法建立链表
+{
+	Information* q = new Information();//建立一个报警信息输入的结点
+	cin >> q->Name;
+	if (y == 1)
+	{
+		struct tm t; //tm结构指针
+		time_t now; //声明time_t类型变量
+		time(&now); //获取系统日期和时间
+		localtime_s(&t, &now); //获取当地日期和时间
+		q->Year = t.tm_year + 1900; q->Month = t.tm_mon + 1; q->Day = t.tm_mday;
+		q->Hour = t.tm_hour; q->Mintue = t.tm_min; q->Second = t.tm_sec;
+	}
+	else if (y == 2)
+	{
+		cin >> q->Year >> q->Month >> q->Day >> q->Hour >> q->Mintue >> q->Second;
+	}
+	q->Jieguo = 'F';
+	q->next = NULL;
+	if (x == 'S')//紧急
+	{
+		q->next = P.adj[0].first->next;
+		P.adj[0].first->next = q;
+		P.adj[0].length++;
+	}
+	else if (x == 'A')//一般
+	{
+		q->next = P.adj[1].first->next;
+		P.adj[1].first->next = q;
+		P.adj[1].length++;
+	}
+	else if (x == 'B')//非紧急
+	{
+		q->next = P.adj[2].first->next;
+		P.adj[2].first->next = q;
+		P.adj[2].length++;
+	}
+}
+void Shuru(Police& P,char x,int m)//输入函数
+{
+	if (x == 'S')
+	{
+		InsertEdge(P, x, m);
+	}
+	else if (x == 'A')
+	{
+		InsertEdge(P, x, m);
+	}
+	else if (x == 'B')
+	{
+		InsertEdge(P, x, m);
+	}
+}
+void Creat(Police &P,int m)//建立Police
+{
+	P.adj[0].Dengji = 'S';P.adj[1].Dengji = 'A';P.adj[2].Dengji = 'B';//初始化报警信息的类别
+	P.adj[0].length = 0; P.adj[1].length = 0; P.adj[2].length = 0;//初始化报警信息的长度
+	P.adj[0].first = new Information;
+	P.adj[0].first->next = NULL;
+	P.adj[1].first = new Information;
+	P.adj[1].first->next = NULL;
+	P.adj[2].first = new Information;
+	P.adj[2].first->next = NULL;
+	//初始化
+	char x;
+	while (1)
+	{
+		cin >> x;
+		if (x != '@')
+		{
+			Shuru(P,x,m);
+		}
+		else
+		{
+			break;
+		}
+	}
+	Information* q = new Information;
+	q = P.adj[2].first->next;
+	while (q)
+	{
+		q->Jieguo = 'Y';
+		q = q->next;
+	}
+	cout << "输入完成" << endl;
+	cout << endl;
+}
+void ChaRu(Police& P,int y)
+{    //插入一个新的报警信息
+	//先输入等级，再输入信息
+	char x;
+	cin >> x;
+	InsertEdge(P,x,y);
+}
+void ChaXun(Police P)
+{
+	int x; int flag=1;
+	cin >> x;
+	if (x == 1)
+	{
+		cout << "根据危险等级查找"<<endl;
+		char m;
+		cin >> m;
+		for (int i = 0; i < 3; i++)
+		{
+			if (P.adj[i].Dengji == m&&P.adj[i].length!=0)
+			{
+				Information* q;
+				q = P.adj[i].first->next;
+				while (q!=NULL)
+				{
+					cout << P.adj[i].Dengji << " " << q->Name << " " << q->Jieguo << " ";
+					if (q->Jieguo == 'Y')
+					{
+						cout << "报警时间";
+						cout << q->Year << "年" << q->Month << "月" << q->Day << "日" << " ";
+						cout << q->Hour << "点" << q->Mintue << "分" << q->Second << "秒" << endl;
+						cout << "出警时间";
+						cout << q->CYear << "年" << q->CMonth << "月" << q->CDay << "日" << " ";
+						cout << q->CHour << "点" << q->CMintue << "分" << q->CSecond << "秒" << endl;
+					}
+					else if (q->Jieguo == 'F')
+					{
+						cout << "报警时间";
+						cout << q->Year << "年" << q->Month << "月" << q->Day << "日" << " ";
+						cout << q->Hour << "点" << q->Mintue << "分" << q->Second << "秒" << endl;
+					}
+					q = q->next;
+					flag = 0;
+				}
+			}
+		}
+	}
+	else if (x == 2)
+	{
+		cout << "根据报警信息直接和危险等级查找"<<endl;
+		cout << "输入危险等级和报警信息"<<endl;
+		char mm[10]; char m;
+		cin >> m >> mm;
+		for (int i = 0; i < 3; i++)
+		{
+			if (P.adj[i].Dengji == m)
+			{
+				Information* q;
+				q = P.adj[i].first->next;
+				while (q)
+				{
+					if (strcmp(q->Name, mm) == 0)
+					{
+						cout << m << " " << q->Name << " " << q->Jieguo << endl;
+						flag = 0;
+						if (q->Jieguo == 'Y')
+						{
+							cout << "报警时间";
+							cout << q->Year << "年" << q->Month << "月" << q->Day << "日" << " ";
+							cout << q->Hour << "点" << q->Mintue << "分" << q->Second << "秒" << endl;
+							cout << "出警时间";
+							cout << q->CYear << "年" << q->CMonth << "月" << q->CDay << "日" << " ";
+							cout << q->CHour << "点" << q->CMintue << "分" << q->CSecond << "秒" << endl;
+						}
+						else if (q->Jieguo == 'F')
+						{
+							cout << "报警时间";
+							cout << q->Year << "年" << q->Month << "月" << q->Day << "日" << " ";
+							cout << q->Hour << "点" << q->Mintue << "分" << q->Second << "秒" << endl;
+						}
+					}
+					q = q->next;
+				}
+			}
+		}
+	}
+	if (flag == 1)
+	{
+		cout << "不存在信息" << endl;
+	}
+	cout << endl;
+}
+void ChuJing(Police& P)
+{
+	cout << "当前没有处理的报警信息："<<endl;
+	for (int i=0;i<3;i++)
+	{
+		if(P.adj[i].length !=0)
+		{
+			Information* q = new Information;
+			q = P.adj[i].first->next;
+			while (q)
+			{
+				if (q->Jieguo == 'F')
+				{
+					cout <<P.adj[i].Dengji<<" "<< q->Name << " " ;
+					cout << "报警时间:";
+					cout << q->Year << "年" << q->Month << "月" << q->Day << "日" << " ";
+					cout << q->Hour << "点" << q->Mintue << "分" << q->Second << "秒" << endl;
+				}
+				q = q->next;
+			}
+		}
+	}
+	cout << "选择一项任务出警"<<endl;
+	cout << "先输入危险等级，再输入报警信息" << endl;
+	char x, a[10];
+	cin >> x >> a;
+	for (int i = 0; i < 3; i++)
+	{
+		if (P.adj[i].Dengji == x)
+		{
+			Information* q = new Information;
+			q = P.adj[i].first->next;
+			while (q)
+			{
+				if (strcmp(q->Name, a) == 0)
+				{
+					q->Jieguo = 'Y';
+					struct tm t; //tm结构指针
+					time_t now; //声明time_t类型变量
+					time(&now); //获取系统日期和时间
+					localtime_s(&t, &now); //获取当地日期和时间
+					q->CYear = t.tm_year + 1900; q->CMonth = t.tm_mon + 1; q->CDay = t.tm_mday;
+					q->CHour = t.tm_hour; q->CMintue = t.tm_min; q->CSecond = t.tm_sec;
+					cout << "出警时间:";
+					cout << q->CYear << "年" << q->CMonth << "月" << q->CDay << "日" << " ";
+					cout << q->CHour << "点" << q->CMintue << "分" << q->CSecond << "秒" << endl;
+					break;
+				}
+				q = q->next;
+			}
+		}
+	}
+	cout << "已经出警"<<endl;
+	cout << endl;
+}
+void ZhuJieMian()
+{
+	cout << "******************************************************************" << endl;
+	cout << "主界面" << endl;
+	cout << "输入1，表示开始录入信息（输入@表示输入结束）" << endl;
+	cout << "输入2，表示查询录入信息" << endl;
+	cout << "输入3，表示删除录入信息" << endl;
+	cout << "输入4，表示插入信息    " << endl;
+	cout << "输入5，表示出警解决问题" << endl;
+	cout << "输入0，表示结束使用系统" << endl;
+	cout << endl;
+}
+void ShanChu(Police& P, int y)
+{
+	if (y == 1)
+	{
+		cout << "先输入等级，再输入信息";
+		char x, a[10];
+		cin >> x >> a;
+		for (int i = 0; i < 3; i++)
+		{
+			if (P.adj[i].Dengji == x)
+			{
+				Information* q; q = P.adj[i].first;
+				while (q->next != NULL)
+				{
+					if (strcmp(q->next->Name, a) == 0)
+					{
+						q->next = q->next->next;
+						P.adj[i].length--;
+						break;
+					}
+					q = q->next;
+				}
+			}
+		}
+	}
+	else if (y == 2)
+	{
+		cout << "输入要删除的危险等级";
+		char x;
+		cin >> x;
+		for (int i = 0; i < 3; i++)
+		{
+			if (P.adj[i].Dengji == x)
+			{
+				P.adj[i].first = NULL;
+				P.adj[i].length = 0;
+			}
+		}
+	}
+	cout << "成功删除" << endl;
+	cout << endl;
+}
+void JingGao(Police& P)
+{//报警序列剩余10%空间或者两个小时后仍有未处理的报警信息，系统给出警告
+	double sum, x;
+	int flag = 0;
+	sum = P.adj[0].length + P.adj[1].length + P.adj[2].length;
+	x = sum / MAX;
+	if (x >= 0.9)//剩余空间不足10%
+	{//警告
+		Beep(523, 400);
+		cout << "系统报警序列剩余空间不足10%" << endl;
+		cout << "请及时处理报警信息" << endl;
+	}
+	for (int i = 0; i < 3; i++)//超过两个小时还有未处理的报警信息
+	{
+		if (P.adj[i].length != 0)
+		{
+			Information* q = new Information;
+			q = P.adj[i].first->next;
+			while (q)
+			{
+				struct tm t; //tm结构指针
+				time_t now; //声明time_t类型变量
+				time(&now); //获取系统日期和时间
+				localtime_s(&t, &now); //获取当地日期和时间
+				//if (t.tm_min - q->Mintue >= 2 && q->Jieguo != 'Y')
+				//{
+				//	cout << P.adj[i].Dengji << " " << q->Name << " " << q->Jieguo << " ";
+				//	cout << "报警时间:";
+				//	cout << q->Year << "年" << q->Month << "月" << q->Day << "日" << " ";
+				//	cout << q->Hour << "点" << q->Mintue << "分" << q->Second << "秒" << endl;
+				//	flag = 1;
+				//}
+				if (((t.tm_mday - q->Day) * 24 + (t.tm_hour - q->Hour) >= 2) && q->Jieguo != 'Y')
+				{
+					cout << P.adj[i].Dengji << " " << q->Name << " " << q->Jieguo << " ";
+					cout << "报警时间:";
+					cout << q->Year << "年" << q->Month << "月" << q->Day << "日" << " ";
+					cout << q->Hour << "点" << q->Mintue << "分" << endl;
+					flag = 1;
+				}
+				q = q->next;
+			}
+		}
+	}
+	if (flag == 1)
+	{
+		cout << "以上报警信息超过两个小时还未处理，请及时处理" << endl;
+		Beep(523, 400);
+	}
+	cout << endl;
+}
+void ShengJi(Police& P)
+{
+	Information* q = new Information;
+	q = P.adj[1].first->next;
+	int a = 1;
+	while (q)
+	{
+		struct tm t; //tm结构指针
+		time_t now; //声明time_t类型变量
+		time(&now); //获取系统日期和时间
+		localtime_s(&t, &now); //获取当地日期和时间
+		//if (t.tm_min - q->Mintue >= 1  && q->Jieguo == 'F')//将A类中的超过一个小时还未处理的信息复制到S类中
+		if ((t.tm_mday - q->Day) * 24 + (t.tm_hour - q->Hour) >= 1&&q->Jieguo == 'F')
+		{
+			Information* x = new Information;
+			x->next = NULL;
+			x->Year = q->Year; x->Month = q->Month; x->Day = q->Day;
+			x->Hour = q->Hour; x->Mintue = q->Mintue; x->Second = q->Second;
+			x->Jieguo = q->Jieguo;
+			strcpy_s(x->Name,q->Name);
+			x->next = P.adj[0].first->next;
+			P.adj[0].first->next = x;
+			P.adj[0].length++;
+			q->fx = 1;
+		}
+		q = q->next;
+	}
+	Information* F; int flag = 0;
+	F = P.adj[1].first;
+	while (F->next!=NULL)
+	{
+		if ( F->next->fx ==1 )
+		{
+			F->next = F->next->next;
+			P.adj[1].length--;
+			flag = 1;
+		}
+		if (flag == 0)
+		{
+			F = F->next;
+		}
+	}
+}
+int main()
+{
+	Police L;
+	//int x; cin >> x;
+	//Creat(L,x);
+	//int y; cin >> y;
+	//if (y == 1)
+	//{
+	//	ShengJi(L);
+	//}
+	//Information* q = new Information;
+	//q = L.adj[0].first->next; 
+	//while (q)
+	//{
+	//	cout << L.adj[0].Dengji << " " << q->Name << endl;
+	//	q = q->next;
+	//}
+	//cout << endl;
+	//q = L.adj[1].first->next;
+	//while (q)
+	//{
+	//	cout << L.adj[1].Dengji << " " << q->Name << endl;
+	//	q = q->next;
+	//}
+	ZhuJieMian();
+	int f;
+	while (1)
+	{
+		cin >> f;
+		if (f == 1)
+		{
+			cout << "请开始输入"<<endl;
+			cout << "关于时间的输入有两种方法" << endl;
+			cout << "1代表第一种：表示根据系统时间直接输入" << endl;
+			cout << "2代表第一种：表示手动输入时间" << endl;
+			int x;cin >> x;			
+			cout << "请输入报警信息" << endl;
+			Creat(L,x);
+		}
+		if (f == 2)
+		{
+			cout << "查询方式有两种"<<endl;
+			cout << "根据危险等级查找和根据报警信息和危险等级直接查找" << endl;
+			cout << "1代表根据危险等级；2代表根据报警信息和危险等级直接查找"<<endl;
+			ChaXun(L);
+		}
+		if (f == 3)
+		{
+			cout << "删除方式有两种" << endl;
+			cout << "根据确定的信息删除或者直接删除某个危险等级" << endl;
+			cout << "1代表根据确定的信息删除；2代表直接删除某个危险等级" << endl;
+			int y; cin >> y;
+			ShanChu(L,y);
+		}
+		if (f == 4)
+		{
+			cout << "先输入等级，再输入信息";
+			cout << "关于时间的输入有两种方法" << endl;
+			cout << "1代表第一种：表示根据系统时间直接输入" << endl;
+			cout << "2代表第一种：表示手动输入时间" << endl;
+			int y; cin >> y;
+			cout << "请输入报警信息" << endl;
+			ChaRu(L,y);
+		}
+		if (f == 5)
+		{
+			cout<<"出警"<<endl;
+			ChuJing(L);
+		}
+		if (f == 0)
+		{
+			break;
+		}
+		ShengJi(L);//超过一个小时没处理的A升级为S
+		ZhuJieMian();
+		JingGao(L);//报警序列剩余10%空间或者两个小时后仍有未处理的报警信息，系统给出警告
+	}
+}
